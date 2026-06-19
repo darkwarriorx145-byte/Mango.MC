@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: mango-mc-store
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main.py:app
+    disk:
+      name: store-storage
+      mountPath: /data
+      sizeGB: 1

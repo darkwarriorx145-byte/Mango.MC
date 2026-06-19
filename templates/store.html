@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangoMC | Server Network Store</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        body { background-color: #0b0c10; background-image: radial-gradient(circle at top, #241403 0%, #0b0c10 80%); }
+        .glow-title { text-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-gray-200 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- ==================== MANAGEMENT PANEL VIEW TERMINAL ==================== -->
+    {% if admin_view %}
+
+        <!-- INTERACTIVE SIGN IN OVERLAY (If session is locked) -->
+        {% if show_login_screen %}
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="w-full max-w-sm bg-[#11131a] border border-gray-800/80 p-8 rounded-2xl shadow-2xl animate__animated animate__fadeInUp">
+                <div class="text-center mb-6">
+                    <span class="text-4xl block mb-2">🔒</span>
+                    <h2 class="text-xl font-black text-white tracking-wide">Secure Node Login</h2>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">MangoMC Operations Dashboard</p>
+                </div>
+
+                {% if login_failed %}
+                <div class="bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-xs p-3 rounded-xl mb-4 text-center">
+                    Incorrect username or security password key.
+                </div>
+                {% endif %}
+
+                <form action="/admin" method="POST" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">User Identifier</label>
+                        <input type="text" name="username" required autocomplete="off" class="w-full bg-[#161922] border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">Passphrase Code</label>
+                        <input type="password" name="password" required class="w-full bg-[#161922] border border-gray-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <button type="submit" class="w-full bg-amber-500 text-black font-black uppercase text-xs py-3.5 rounded-xl cursor-pointer shadow-lg shadow-amber-500/10 mt-2">Unlock Console</button>
+                    <a href="/" class="block text-center text-xs font-bold text-gray-500 hover:text-gray-400 pt-2">Return to Storefront</a>
+                </form>
+            </div>
+        </div>
+        {% else %}
+
+        <!-- DASHBOARD CONTAINER PANEL -->
+        <div class="max-w-6xl mx-auto px-4 py-12 w-full">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-6 mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-amber-400 tracking-wide">⚙️ MangoMC Management Terminal</h1>
+                    <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest font-mono">Open Database Layer Control (SQLite)</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="/" class="bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs uppercase px-4 py-3 rounded-xl transition-all shadow-md">← Back to Store</a>
+                    <a href="/admin/logout" class="bg-red-900/40 hover:bg-red-900 text-red-400 hover:text-white font-bold text-xs uppercase px-4 py-3 rounded-xl transition-all border border-red-500/20">Exit Session</a>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 border-b border-gray-900 pb-4 mb-8">
+                {% for tab in ['orders', 'history', 'product', 'coupons'] %}
+                <a href="/admin?tab={{ tab }}" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 border {% if active_tab == tab %} bg-amber-500 text-black border-transparent shadow-lg shadow-amber-500/10 {% else %} bg-[#11131a] text-gray-400 border-gray-800/60 hover:text-white hover:border-gray-700 {% endif %}">
+                    ⚙️ {% if tab == 'history' %}ORDER HISTORY{% else %}{{ tab.upper() }}{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- TAB: ACTIVE PENDING ORDERS -->
+            {% if active_tab == 'orders' %}
+            <div class="space-y-6">
+                <h3 class="text-xl font-bold text-white">📦 Active Player Orders Queue</h3>
+                {% if not orders %}
+                    <p class="text-sm text-gray-500 italic bg-[#11131a] p-8 text-center rounded-2xl border border-gray-800">No active pending orders right now.</p>
+                {% else %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for order in orders|reverse %}
+                        <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-5 shadow-lg flex justify-between items-start gap-4 animate__animated animate__fadeIn">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 border-b border-gray-800/60 pb-3 mb-3">
+                                    <span class="text-xs font-bold text-amber-400 font-mono">INVOICE LOG #00{{ order.id }}</span>
+                                    <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/20">PENDING</span>
+                                </div>
+                                <p class="text-base font-black text-white mb-2">User account: <span class="text-orange-400">{{ order.player }}</span></p>
+                                <div class="space-y-1.5 mb-3">
+                                    {% for item in order['items'] %}
+                                    <div class="text-xs bg-black/20 p-2 rounded-lg flex justify-between"><span class="text-gray-300"><b>{{ item.qty }}x</b> {{ item.name }}</span></div>
+                                    {% endfor %}
+                                </div>
+                                <div class="text-[11px] text-gray-400 mb-3 bg-black/10 p-2 rounded-lg border border-gray-900 flex justify-between">
+                                    <span>Used Coupon:</span><span class="font-mono text-amber-500 font-bold">{{ order.discount }}</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-2 border-t border-gray-900"><span class="text-xs text-gray-400 font-bold">Total Cash:</span><span class="text-base font-black text-green-400">{{ order.total }}</span></div>
+                            </div>
+                            <div class="flex flex-col gap-2 pt-1">
+                                <form action="/admin/order/{{ order.id }}/accept" method="POST" onsubmit="return confirm('Accept this order?');">
+                                    <button type="submit" class="w-10 h-10 bg-green-600 hover:bg-green-500 text-black font-black rounded-xl shadow-lg transition-colors flex items-center justify-center cursor-pointer">✓</button>
+                                </form>
+                                <form action="/admin/order/{{ order.id }}/decline" method="POST" id="decline-form-{{ order.id }}">
+                                    <input type="hidden" name="reason" id="decline-reason-{{ order.id }}" value="">
+                                    <button type="button" onclick="declineWithReason('{{ order.id }}')" class="w-10 h-10 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transition-colors flex items-center justify-center cursor-pointer">✕</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- TAB: ARCHIVED ORDER HISTORY -->
+            {% elif active_tab == 'history' %}
+            <div class="space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-900 pb-2">
+                    <h3 class="text-xl font-bold text-white">📜 Global Transaction History Registry</h3>
+                    <span class="bg-gray-800 text-xs font-mono font-bold px-3 py-1 rounded-full text-gray-300">Total Managed Invoices: {{ history_orders|length }}</span>
+                </div>
+                {% if not history_orders %}
+                    <p class="text-sm text-gray-500 italic bg-[#11131a] p-8 text-center rounded-2xl border border-gray-800">No archived logs yet.</p>
+                {% else %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for order in history_orders|reverse %}
+                        <div class="bg-[#11131a]/80 border border-gray-900 rounded-2xl p-5 shadow-md">
+                            <div class="flex items-center justify-between border-b border-gray-800/60 pb-3 mb-3">
+                                <span class="text-xs font-bold text-gray-500 font-mono">INVOICE ARCHIVE #00{{ order.id }}</span>
+                                <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border {% if order.status == 'Success' %}bg-green-500/10 text-green-400 border-green-500/20{% else %}bg-red-500/10 text-red-400 border-red-500/20{% endif %}">
+                                    {% if order.status == 'Success' %}🟢 ACCEPTED{% else %}🔴 DECLINED{% endif %}
+                                </span>
+                            </div>
+                            <p class="text-base font-black text-white mb-2">User account: <span class="text-gray-400">{{ order.player }}</span></p>
+                            <div class="space-y-1.5 mb-3">
+                                {% for item in order['items'] %}
+                                <div class="text-xs bg-black/10 p-2 rounded-lg flex justify-between text-gray-400"><span><b>{{ item.qty }}x</b> {{ item.name }}</span></div>
+                                {% endfor %}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <div class="text-[10px] bg-black/20 p-2 rounded-lg border border-gray-900"><span class="text-gray-500 block font-bold mb-0.5">Voucher Discount</span><span class="text-amber-500 font-mono font-bold">{{ order.discount }}</span></div>
+                                <div class="text-[10px] bg-black/20 p-2 rounded-lg border border-gray-900"><span class="text-gray-500 block font-bold mb-0.5">Reason</span><span class="text-gray-300 truncate block" title="{{ order.reason }}">{{ order.reason }}</span></div>
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t border-gray-900"><span class="text-xs text-gray-500">Settled Amount:</span><span class="text-sm font-black {% if order.status == 'Success' %}text-green-500{% else %}text-red-400 line-through{% endif %}">{{ order.total }}</span></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- TAB: PRODUCTS DATABASE INDEX -->
+            {% elif active_tab == 'product' %}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-6 h-fit shadow-xl">
+                    <h3 class="text-base font-bold text-white mb-4" id="form-action-title">➕ Deploy / Modify Product</h3>
+                    <form action="/admin/save_product" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="product_id" id="form-product-id" value="">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Target Module Tab</label><select name="category" id="form-category" class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"><option value="rank">Ranks</option><option value="crates">Crates</option><option value="cash">Economy Cash</option><option value="power">Power Boosters</option><option value="spacial">Special</option></select></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Product Title</label><input type="text" name="name" id="form-name" required class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Price (INR)</label><input type="number" name="price" id="form-price" required class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Upload Product Image</label><input type="file" name="image_file" accept="image/*" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-500/10 file:text-amber-400 hover:file:bg-amber-500/20 cursor-pointer"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Description Perks</label><textarea name="description" id="form-desc" rows="3" required class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-xs text-white focus:outline-none"></textarea></div>
+                        <button type="submit" class="w-full bg-amber-500 text-black font-black uppercase text-xs py-3 rounded-lg cursor-pointer">Commit Database Change</button>
+                        <button type="button" onclick="resetFormState()" id="form-reset-btn" class="w-full bg-gray-800 text-gray-400 font-bold uppercase text-[10px] py-1.5 rounded-md hidden">Cancel Edit Mode</button>
+                    </form>
+                </div>
+                <div class="lg:col-span-2 space-y-4">
+                    <h3 class="text-xl font-bold text-white">Active Database Index Registry</h3>
+                    <div class="space-y-2">
+                        {% for i in products %}
+                        <div class="bg-[#141720] rounded-xl p-3 flex justify-between items-center border border-gray-800/60 text-xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-black flex items-center justify-center overflow-hidden border border-gray-800">
+                                    {% if i.img_url %}<img src="{{ i.img_url }}" class="w-full h-full object-cover">{% else %}💎{% endif %}
+                                </div>
+                                <div>
+                                    <span class="font-bold text-white block">{{ i.name }} <b class="text-orange-400 ml-1">(₹{{ i.price }})</b></span>
+                                    <span class="text-[10px] text-gray-500 uppercase font-mono">Category: {{ i.category }}</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="enterEditState('{{ i.id }}', '{{ i.category }}', '{{ i.name }}', '{{ i.price }}', `{{ i.desc }}`)" class="bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-black font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-colors">Edit</button>
+                                <a href="/admin/delete_product/{{ i.id }}" onclick="return confirm('Wipe item?')" class="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white font-bold px-3 py-1.5 rounded-lg transition-colors">Wipe</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: VOUCHERS CONTROL -->
+            {% elif active_tab == 'coupons' %}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-6 h-fit shadow-xl">
+                    <h3 class="text-base font-bold text-white mb-4">🎫 Create System Voucher</h3>
+                    <form action="/admin/save_coupon" method="POST" class="space-y-4">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Coupon Action Code</label><input type="text" name="code" placeholder="e.g. MANGO50" required class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Calculative Type</label><select name="type" class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"><option value="Percentage">Percentage Discount (%)</option><option value="Fixed Amount">Fixed Amount Reduction</option></select></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase mb-1">Value Amount</label><input type="number" name="value" required class="w-full bg-[#161922] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none"></div>
+                        <button type="submit" class="w-full bg-amber-500 text-black font-black uppercase text-xs py-3 rounded-lg cursor-pointer">Generate Code</button>
+                    </form>
+                </div>
+                <div class="lg:col-span-2 space-y-4">
+                    <h3 class="text-xl font-bold text-white">Active Store Coupons</h3>
+                    <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-4 overflow-hidden shadow-xl">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-black/40 text-gray-400 uppercase font-mono tracking-wider"><tr class="border-b border-gray-800"><th class="p-3">Coupon Code</th><th class="p-3">Type</th><th class="p-3">Value</th></tr></thead>
+                            <tbody class="divide-y divide-gray-900 text-gray-300">
+                                {% for c in coupons %}
+                                <tr class="border-b border-gray-800/40"><td class="p-3 font-mono font-bold text-amber-400">{{ c.code }}</td><td class="p-3">{{ c.type }}</td><td class="p-3 font-bold">{% if c.type == 'Percentage' %}{{ c.value }}% Off{% else %}₹{{ c.value }}{% endif %}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    <script>
+        function declineWithReason(orderId) {
+            let reason = prompt("Enter rejection reason:");
+            if (reason === null) return;
+            if (reason.trim() === "") reason = "Declined: No reason given.";
+            document.getElementById('decline-reason-' + orderId).value = reason;
+            document.getElementById('decline-form-' + orderId).submit();
+        }
+        function enterEditState(id, category, name, price, desc) {
+            document.getElementById('form-action-title').innerText = "📝 Edit Product Data Mode";
+            document.getElementById('form-product-id').value = id;
+            document.getElementById('form-category').value = category;
+            document.getElementById('form-name').value = name;
+            document.getElementById('form-price').value = price;
+            document.getElementById('form-desc').value = desc;
+            document.getElementById('form-reset-btn').classList.remove('hidden');
+        }
+        function resetFormState() {
+            document.getElementById('form-action-title').innerText = "➕ Deploy / Modify Product";
+            document.getElementById('form-product-id').value = "";
+            document.getElementById('form-name').value = "";
+            document.getElementById('form-price').value = "";
+            document.getElementById('form-desc').value = "";
+            document.getElementById('form-reset-btn').classList.add('hidden');
+        }
+    </script>
+
+    <!-- ==================== ONLINE PAYMENT CHECKOUT PORTAL ==================== -->
+    {% elif show_payment_screen %}
+    <div class="max-w-4xl mx-auto px-4 py-12 w-full animate__animated animate__fadeIn">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-black tracking-wide text-white">🛡️ Secure Payments Checkout</h2>
+            <p class="text-xs text-gray-400 uppercase tracking-widest mt-1">Order Processing Terminal (INR Portal)</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-8">
+            <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-6 md:col-span-2 h-fit">
+                <h3 class="text-xs font-black uppercase text-gray-400 tracking-wider mb-4 pb-2 border-b border-gray-800">Order Information</h3>
+                <div class="space-y-3 mb-6">
+                    <div class="text-xs flex justify-between"><span class="text-gray-500">Player ID:</span><span class="text-white font-bold">{{ player }}</span></div>
+                    <div class="text-xs flex justify-between"><span class="text-gray-500">Applied Discount:</span><span class="text-orange-400 font-bold font-mono">{{ discount_str }}</span></div>
+                </div>
+                <div class="pt-4 border-t border-gray-950 flex justify-between items-center">
+                    <span class="text-xs font-black uppercase text-gray-400">Total Payable:</span>
+                    <span class="text-2xl font-black text-green-400">₹{{ "{:,}".format(total_cost) }}</span>
+                </div>
+            </div>
+
+            <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-6 md:col-span-3">
+                <form action="/checkout" method="POST" id="gateway-terminal-form">
+                    <input type="hidden" name="mc_username" value="{{ player }}">
+                    <input type="hidden" name="items_json" value="{{ items_json }}">
+                    <input type="hidden" name="total_paid" value="{{ total_cost }}">
+                    <input type="hidden" name="discount_str" value="{{ discount_str }}">
+
+                    <h3 class="text-sm font-bold text-white mb-4">Choose Payment Route</h3>
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <button type="button" onclick="selectPaymentRoute('UPI')" id="btn-upi" class="bg-black/40 border-2 border-purple-500 text-white font-bold p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer">⚡ UPI / PhonePe</button>
+                        <button type="button" onclick="selectPaymentRoute('Card')" id="btn-card" class="bg-black/20 border-2 border-transparent text-gray-400 p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer">💳 Card Info</button>
+                        <button type="button" onclick="selectPaymentRoute('PayPal')" id="btn-paypal" class="bg-black/20 border-2 border-transparent text-gray-400 p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer">🅿️ PayPal Node</button>
+                    </div>
+
+                    <input type="hidden" name="payment_method" id="selected-method-input" value="UPI (PhonePe/GPay)">
+
+                    <div id="sub-panel-upi" class="space-y-4">
+                        <div><label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Enter UPI Address</label><input type="text" placeholder="username@ybl" class="w-full bg-[#161922] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"></div>
+                    </div>
+                    <div id="sub-panel-card" class="space-y-4 hidden">
+                        <div><label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Card Number</label><input type="text" placeholder="4111 2222 3333 4444" class="w-full bg-[#161922] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none"></div>
+                    </div>
+                    <div id="sub-panel-paypal" class="space-y-3 hidden">
+                        <div><label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">PayPal Email</label><input type="email" placeholder="player@email.com" class="w-full bg-[#161922] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none"></div>
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-black font-black uppercase text-xs py-4 rounded-xl shadow-md cursor-pointer mt-6">Authorize Remittance (₹{{ "{:,}".format(total_cost) }})</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectPaymentRoute(route) {
+            document.getElementById('sub-panel-upi').classList.add('hidden');
+            document.getElementById('sub-panel-card').classList.add('hidden');
+            document.getElementById('sub-panel-paypal').classList.add('hidden');
+            document.getElementById('btn-upi').className = "bg-black/20 border-2 border-transparent text-gray-400 p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+            document.getElementById('btn-card').className = "bg-black/20 border-2 border-transparent text-gray-400 p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+            document.getElementById('btn-paypal').className = "bg-black/20 border-2 border-transparent text-gray-400 p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+
+            if(route === 'UPI') {
+                document.getElementById('sub-panel-upi').classList.remove('hidden');
+                document.getElementById('btn-upi').className = "bg-black/40 border-2 border-purple-500 text-white font-bold p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+                document.getElementById('selected-method-input').value = "UPI (PhonePe/GPay)";
+            } else if (route === 'Card') {
+                document.getElementById('sub-panel-card').classList.remove('hidden');
+                document.getElementById('btn-card').className = "bg-black/40 border-2 border-amber-500 text-white font-bold p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+                document.getElementById('selected-method-input').value = "Debit/Credit Card Gateway";
+            } else if (route === 'PayPal') {
+                document.getElementById('sub-panel-paypal').classList.remove('hidden');
+                document.getElementById('btn-paypal').className = "bg-black/40 border-2 border-blue-500 text-white font-bold p-3 rounded-xl text-xs flex flex-col items-center gap-1 cursor-pointer";
+                document.getElementById('selected-method-input').value = "PayPal Vault Terminal";
+            }
+        }
+    </script>
+
+    <!-- ==================== CRATE REVEAL CINEMATIC ==================== -->
+    {% elif reveal %}
+    <div class="fixed inset-0 bg-[#06070a] z-50 flex items-center justify-center overflow-hidden">
+        <div id="crate-stage" class="text-center cursor-pointer">
+            <div id="blast-glow" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl opacity-0 transition-opacity duration-500"></div>
+            <div id="crate" class="text-9xl mb-4 select-none filter drop-shadow-[0_10px_20px_rgba(245,158,11,0.3)] animate__animated animate__bounceIn">📦</div>
+            <p id="crate-hint" class="text-amber-400 font-semibold tracking-widest text-xs uppercase animate__animated animate__pulse animate__infinite">Click Box to Verify Purchase</p>
+        </div>
+        <div id="reward-screen" class="hidden text-center max-w-md px-6">
+            <div class="bg-gradient-to-b from-amber-500/10 to-transparent border border-amber-500/30 p-10 rounded-3xl shadow-2xl animate__animated animate__zoomInUp">
+                <div class="text-6xl mb-4">💎</div>
+                <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500 mb-1">Payment Registered Successfully</h2>
+                <h3 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 mb-6 truncate">{{ chosen_rank }}</h3>
+                <div class="bg-black/40 border border-gray-800 rounded-xl p-4 mb-6"><p class="text-xs text-gray-500">Target Identity Mapping:</p><p class="text-base font-bold text-white tracking-wide">👤 {{ player }}</p></div>
+                <a href="/" class="inline-block bg-white text-black font-bold uppercase text-xs tracking-wider px-6 py-3 rounded-md">Return to storefront</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('crate-stage').addEventListener('click', () => {
+            document.getElementById('crate-hint').classList.add('hidden');
+            document.getElementById('crate').className = "text-9xl mb-4 select-none animate__animated animate__wobble";
+            document.getElementById('blast-glow').className = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/40 rounded-full blur-2xl transition-all duration-700 transform scale-150";
+            setTimeout(() => {
+                document.getElementById('crate-stage').classList.add('hidden');
+                document.getElementById('reward-screen').classList.remove('hidden');
+            }, 1100);
+        });
+    </script>
+
+    <!-- ==================== PUBLIC STOREFRONT GATEWAY LAYOUT ==================== -->
+    {% else %}
+    <div>
+        <div class="max-w-6xl mx-auto px-4 pt-6 flex justify-between items-center relative z-20">
+            <div class="w-10"></div>
+            <header class="text-center">
+                <a href="/admin" class="inline-block group" title="Open Dashboard Control Panel">
+                    <h1 class="text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-500 glow-title transform group-hover:scale-102 transition-transform duration-200">🥭 MANGO.MC</h1>
+                </a>
+                <p class="text-gray-400 mt-1 text-[10px] uppercase tracking-widest font-semibold">Official Network Store</p>
+            </header>
+
+            <button onclick="toggleCartPanel(true)" class="relative bg-[#11131a] text-amber-500 w-12 h-12 rounded-xl border border-gray-800 flex items-center justify-center cursor-pointer shadow-xl group">
+                <span class="text-xl">🛒</span>
+                <span id="floating-cart-badge" class="absolute -top-1.5 -right-1.5 bg-orange-500 text-white font-mono font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center shadow-md scale-0 transition-transform">0</span>
+            </button>
+        </div>
+        <div class="w-16 h-0.5 bg-gradient-to-r from-amber-500 to-orange-500 mx-auto mt-4 rounded-full"></div>
+
+        <nav class="max-w-3xl mx-auto px-4 mt-8 mb-10 flex flex-wrap justify-center gap-2">
+            {% for cat in ['rank', 'crates', 'cash', 'power', 'spacial'] %}
+            <a href="/?category={{ cat }}" class="px-5 py-2.5 rounded-xl font-bold uppercase text-xs tracking-wider border {% if selected_cat == cat %} bg-gradient-to-r from-amber-500 to-orange-500 text-black border-transparent shadow-lg scale-105 {% else %} bg-[#11131a] text-gray-400 border-gray-800/60 hover:text-white {% endif %}">
+                {{ 'special' if cat == 'spacial' else cat }}
+            </a>
+            {% endfor %}
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 mb-12">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% if not items %}
+                <div class="col-span-full text-center py-16 bg-[#11131a] rounded-2xl border border-gray-800"><p class="text-sm text-gray-500 italic">No assets inside this category query index.</p></div>
+                {% else %}
+                    {% for item in items %}
+                    <div class="bg-[#11131a] border border-gray-800/80 rounded-2xl p-5 shadow-xl hover:border-amber-500/40 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[340px] relative">
+                        <button onclick="addToCart('{{ item.id }}', '{{ item.name }}', {{ item.price }})" class="absolute top-4 right-4 bg-amber-500 hover:bg-orange-500 text-black font-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center text-xl cursor-pointer z-10">+</button>
+                        <div>
+                            <div class="w-full h-32 bg-[#08090d] rounded-xl mb-4 overflow-hidden flex items-center justify-center border border-gray-800 text-xs text-gray-600 font-medium">
+                                {% if item.img_url %}<img src="{{ item.img_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">{% else %}<div class="text-center px-4"><span class="block text-xl mb-1">📷</span>No Image</div>{% endif %}
+                            </div>
+                            <h3 class="text-lg font-bold text-white line-clamp-1 mb-0.5 pr-8">{{ item.name }}</h3>
+                            <p class="text-sm font-black text-amber-400 mb-3">₹{{ "{:,}".format(item.price) }}</p>
+                            <p class="text-xs text-gray-400 leading-relaxed line-clamp-3">{{ item.desc }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </main>
+
+        <div id="cart-sidebar-modal" class="fixed inset-0 bg-black/70 z-50 invisible opacity-0 transition-all duration-300 flex justify-end">
+            <div id="cart-sidebar-panel" class="w-full max-w-md bg-[#0e1015] h-full shadow-2xl border-l border-gray-800/80 p-6 flex flex-col justify-between transform translate-x-full transition-transform duration-300">
+                <div>
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-4 mb-4">
+                        <h4 class="text-base font-black uppercase tracking-widest text-white">🛒 Basket Terminal</h4>
+                        <button onclick="toggleCartPanel(false)" class="text-gray-400 hover:text-white text-sm font-bold cursor-pointer">✕ Close</button>
+                    </div>
+
+                    <form action="/payment" method="POST" id="checkout-form" onsubmit="return validateCheckoutForm()" class="space-y-4">
+                        <input type="hidden" name="applied_coupon_code" id="hidden-coupon-input" value="">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Minecraft Username</label>
+                            <input type="text" name="mc_username" id="mc_username" placeholder="Account Tag Identity" required class="w-full bg-[#161922] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+
+                        <div id="cart-items-wrapper" class="space-y-2 max-h-[220px] overflow-y-auto pr-1 border-t border-b border-gray-900 py-3"></div>
+
+                        <div class="bg-black/30 p-3 rounded-xl border border-gray-800/60">
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-gray-500 mb-1">Apply Promotion Voucher</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="coupon-field-input" placeholder="Enter Coupon" class="w-full bg-[#161922] border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white uppercase focus:outline-none focus:border-amber-500">
+                                <button type="button" onclick="applyCouponClientSide()" class="bg-amber-500 hover:bg-amber-600 text-black font-black text-[10px] uppercase px-4 rounded-lg cursor-pointer">Apply</button>
+                            </div>
+                            <p id="coupon-feedback-log" class="text-[10px] mt-1 font-semibold hidden"></p>
+                        </div>
+
+                        <div class="space-y-1 pt-2">
+                            <div class="flex justify-between text-xs text-gray-500"><span>Cart Subtotal:</span><span id="subtotal-display">₹0</span></div>
+                            <div class="flex justify-between text-xs text-red-400 hidden" id="discount-row-display"><span>Voucher Cut:</span><span id="discount-amount-display">-₹0</span></div>
+                            <div class="flex justify-between items-center pt-1 border-t border-gray-900/60"><span class="text-xs font-bold uppercase text-gray-400">Net Due Amount:</span><span id="cart-total-display" class="text-xl font-black text-green-400">₹0</span></div>
+                        </div>
+                        <button type="submit" id="checkout-btn" disabled class="w-full bg-gray-800 text-gray-500 font-black uppercase text-xs py-4 rounded-xl cursor-not-allowed">Proceed to Payment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <footer class="text-center px-4 mt-8 pb-8 flex flex-col items-center justify-center gap-2 border-t border-gray-900/50 pt-6">
+        <p class="text-[10px] text-gray-600">MangoMC Platform Network System © 2026.</p>
+    </footer>
+
+    <script>
+        let cart = {};
+        let activeDiscount = { type: 'None', value: 0, code: '' };
+
+        function toggleCartPanel(open) {
+            const modal = document.getElementById('cart-sidebar-modal');
+            const panel = document.getElementById('cart-sidebar-panel');
+            if (open) { modal.classList.remove('invisible', 'opacity-0'); panel.classList.remove('translate-x-full'); }
+            else { panel.classList.add('translate-x-full'); setTimeout(() => modal.classList.add('invisible', 'opacity-0'), 300); }
+        }
+        function addToCart(id, name, price) {
+            if (cart[id]) { cart[id].qty += 1; } else { cart[id] = { name: name, price: price, qty: 1 }; }
+            renderCartData(); toggleCartPanel(true);
+        }
+        function updateQty(id, newQty) {
+            if (parseInt(newQty) <= 0) { delete cart[id]; } else { cart[id].qty = parseInt(newQty); }
+            renderCartData();
+        }
+        function applyCouponClientSide() {
+            const code = document.getElementById('coupon-field-input').value.trim();
+            const log = document.getElementById('coupon-feedback-log');
+            if(!code) return;
+            fetch('/validate_coupon', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                log.classList.remove('hidden');
+                if(data.success) {
+                    activeDiscount = { type: data.type, value: data.value, code: code.toUpperCase() };
+                    document.getElementById('hidden-coupon-input').value = code;
+                    log.className = "text-[10px] mt-1 font-semibold text-green-400";
+                    log.innerText = `Applied ${data.value}${data.type === 'Percentage' ? '%' : ' ₹'} discount.`;
+                } else {
+                    activeDiscount = { type: 'None', value: 0, code: '' };
+                    document.getElementById('hidden-coupon-input').value = "";
+                    log.className = "text-[10px] mt-1 font-semibold text-red-400";
+                    log.innerText = "Invalid coupon code.";
+                }
+                renderCartData();
+            });
+        }
+        function renderCartData() {
+            const wrapper = document.getElementById('cart-items-wrapper');
+            const floatingBadge = document.getElementById('floating-cart-badge');
+            const subtotalDisplay = document.getElementById('subtotal-display');
+            const totalDisplay = document.getElementById('cart-total-display');
+            const discountRow = document.getElementById('discount-row-display');
+            const discountDisplay = document.getElementById('discount-amount-display');
+            const submitBtn = document.getElementById('checkout-btn');
+
+            wrapper.innerHTML = ""; let subtotal = 0; let totalCount = 0; const keys = Object.keys(cart);
+            if (keys.length === 0) {
+                wrapper.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-6">Empty basket.</p>`;
+                floatingBadge.className = "absolute -top-1.5 -right-1.5 scale-0 w-5 h-5 rounded-full";
+                subtotalDisplay.innerText = "₹0"; totalDisplay.innerText = "₹0"; discountRow.classList.add('hidden');
+                submitBtn.disabled = true; submitBtn.className = "w-full bg-gray-800 text-gray-500 font-black uppercase text-xs py-4 rounded-xl cursor-not-allowed";
+                return;
+            }
+            keys.forEach(id => {
+                const item = cart[id]; subtotal += (item.price * item.qty); totalCount += item.qty;
+                wrapper.insertAdjacentHTML('beforeend', `
+                    <div class="bg-black/30 border border-gray-800/60 rounded-xl p-3 flex justify-between items-center text-xs">
+                        <div class="flex-1 min-w-0 pr-2"><p class="font-bold text-white truncate">${item.name}</p><p class="text-[10px] text-amber-400 mt-0.5">₹${item.price.toLocaleString()}</p></div>
+                        <div class="flex items-center gap-2"><input type="hidden" name="product_ids[]" value="${id}"><input type="number" name="quantities[]" value="${item.qty}" min="1" onchange="updateQty('${id}', this.value)" class="w-12 bg-[#161922] border border-gray-700 text-center rounded px-1 py-1 text-white font-bold"></div>
+                    </div>`);
+            });
+            let cut = activeDiscount.type === "Percentage" ? subtotal * (activeDiscount.value / 100) : activeDiscount.value;
+            let netTotal = Math.max(0, subtotal - cut);
+            floatingBadge.innerText = totalCount;
+            floatingBadge.className = "absolute -top-1.5 -right-1.5 bg-orange-500 text-white font-mono font-black text-[9px] w-5 h-5 rounded-full flex items-center justify-center shadow-md scale-100 transition-transform";
+            subtotalDisplay.innerText = `₹${subtotal.toLocaleString()}`;
+            if(cut > 0) { discountRow.classList.remove('hidden'); discountDisplay.innerText = `-₹${parseInt(cut).toLocaleString()}`; }
+            else { discountRow.classList.add('hidden'); }
+            totalDisplay.innerText = `₹${parseInt(netTotal).toLocaleString()}`; submitBtn.disabled = false;
+            submitBtn.className = "w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black uppercase text-xs py-4 rounded-xl cursor-pointer shadow-md";
+        }
+        function validateCheckoutForm() { return Object.keys(cart).length > 0 && !!document.getElementById('mc_username').value.trim(); }
+    </script>
+</body>
+</html>
