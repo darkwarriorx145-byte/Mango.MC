@@ -1,27 +1,21 @@
 import os
-import json
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = "mango_mc_secure_secret_key_node"
 
+# --- COPY & PASTE THIS DATABASE FIX CONFIGURATION ---
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'mango_store.db')}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# ----------------------------------------------------
+
+db = SQLAlchemy(app)
 # ==========================================
 # CHANGE YOUR CONFIGURATION CREDENTIALS HERE
 # ==========================================
 ADMIN_USERNAME = "Radha-krishn"  # <--- Change your username here
 ADMIN_PASSWORD = "radha@opl12"  # <--- Change your password here
-
-# DATABASE CONFIGURATION
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///store.db'
-# Change this line in main.py to protect your data on Render
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////data/store.db'
-app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-db = SQLAlchemy(app)
-
 
 # DATABASE MODELS
 class Product(db.Model):
