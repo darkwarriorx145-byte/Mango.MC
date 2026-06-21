@@ -1,6 +1,8 @@
-import os
+import os  # <--- ADD THIS LINE HERE
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
+from flask_sqlalchemy import SQLAlchemy
 
+# ... rest of your code continues below ...
 app = Flask(__name__)
 
 # --- COPY & PASTE THIS DATABASE FIX CONFIGURATION ---
