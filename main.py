@@ -1,6 +1,8 @@
-import os  # <--- ADD THIS LINE HERE
+import os
+import json
+import urllib.parse
+
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
-from flask_sqlalchemy import SQLAlchemy
 
 # ... rest of your code continues below ...
 app = Flask(__name__)
@@ -17,6 +19,9 @@ db = SQLAlchemy(app)
 # ==========================================
 ADMIN_USERNAME = "Radha-krishn"  # <--- Change your username here
 ADMIN_PASSWORD = "radha@opl12"  # <--- Change your password here
+
+UPI_ID = "8085903987@ybl"
+MERCHANT_NAME = "MangoMC"
 
 # DATABASE MODELS
 class Product(db.Model):
@@ -122,9 +127,23 @@ def payment_gateway():
                 final_cost = max(0, subtotal - cp.value)
                 discount_string = f"{cp.code} (-₹{cp.value})"
 
-    return render_template('store.html', show_payment_screen=True, player=username, total_cost=int(final_cost),
-                           items_json=json.dumps(order_items), discount_str=discount_string)
+  upi_link = (
+    f"upi://pay?"
+    f"pa=8085903987@ybl"
+    f"&pn=MangoMC"
+    f"&am={int(final_cost)}"
+    f"&cu=INR"
+)
 
+return render_template(
+    'store.html',
+    show_payment_screen=True,
+    player=username,
+    total_cost=int(final_cost),
+    items_json=json.dumps(order_items),
+    discount_str=discount_string,
+    upi_link=upi_link
+)
 
 @app.route('/checkout', methods=['POST'])
 def checkout():
