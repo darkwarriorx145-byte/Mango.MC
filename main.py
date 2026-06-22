@@ -97,7 +97,6 @@ def validate_coupon():
     if coupon: return jsonify({"success": True, "type": coupon.type, "value": coupon.value})
     return jsonify({"success": False, "message": "Invalid Coupon Code"})
 
-
 @app.route('/payment', methods=['POST'])
 def payment_gateway():
     username = request.form.get('mc_username')
@@ -107,22 +106,38 @@ def payment_gateway():
 
     order_items = []
     subtotal = 0
+
     for p_id, qty in zip(product_ids, quantities):
         product = Product.query.get(int(p_id))
         if product and int(qty) > 0:
             subtotal += product.price * int(qty)
-            order_items.append({"id": p_id, "name": product.name, "qty": int(qty), "cost": product.price * int(qty)})
+            order_items.append({
+                "id": p_id,
+                "name": product.name,
+                "qty": int(qty),
+                "cost": product.price * int(qty)
+            })
 
-    if not order_items: return redirect(url_for('home'))
+    if not order_items:
+        return redirect(url_for('home'))
 
     final_cost = subtotal
     discount_string = "None"
-       if applied_coupon:
-        cp = Coupon.query.filter_by(code=applied_coupon.upper().strip()).first()
+
+    if applied_coupon:
+        cp = Coupon.query.filter_by(
+            code=applied_coupon.upper().strip()
+        ).first()
+
         if cp:
             if cp.type == "Percentage":
-                final_cost = max(0, subtotal - (subtotal * (cp.value / 100)))
-                discount_string = f"{cp.code} (-₹{int(subtotal * (cp.value / 100))})"
+                final_cost = max(
+                    0,
+                    subtotal - (subtotal * (cp.value / 100))
+                )
+                discount_string = (
+                    f"{cp.code} (-₹{int(subtotal * (cp.value / 100))})"
+                )
             else:
                 final_cost = max(0, subtotal - cp.value)
                 discount_string = f"{cp.code} (-₹{cp.value})"
