@@ -1,7 +1,7 @@
 import os
 import json
 import urllib.parse
-
+from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 
 # ... rest of your code continues below ...
