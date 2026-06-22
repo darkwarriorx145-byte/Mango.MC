@@ -117,7 +117,7 @@ def payment_gateway():
 
     final_cost = subtotal
     discount_string = "None"
-    if applied_coupon:
+       if applied_coupon:
         cp = Coupon.query.filter_by(code=applied_coupon.upper().strip()).first()
         if cp:
             if cp.type == "Percentage":
@@ -127,23 +127,23 @@ def payment_gateway():
                 final_cost = max(0, subtotal - cp.value)
                 discount_string = f"{cp.code} (-₹{cp.value})"
 
-  upi_link = (
-    f"upi://pay?"
-    f"pa=8085903987@ybl"
-    f"&pn=MangoMC"
-    f"&am={int(final_cost)}"
-    f"&cu=INR"
-)
+    upi_link = (
+        f"upi://pay?"
+        f"pa=8085903987@ybl"
+        f"&pn=MangoMC"
+        f"&am={int(final_cost)}"
+        f"&cu=INR"
+    )
 
-return render_template(
-    'store.html',
-    show_payment_screen=True,
-    player=username,
-    total_cost=int(final_cost),
-    items_json=json.dumps(order_items),
-    discount_str=discount_string,
-    upi_link=upi_link
-)
+    return render_template(
+        'store.html',
+        show_payment_screen=True,
+        player=username,
+        total_cost=int(final_cost),
+        items_json=json.dumps(order_items),
+        discount_str=discount_string,
+        upi_link=upi_link
+    )
 
 @app.route('/checkout', methods=['POST'])
 def checkout():
