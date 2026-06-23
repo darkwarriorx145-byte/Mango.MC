@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 app = Flask(__name__)
 
 app.secret_key = "mangomc_super_secret_key_2026"
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # --- COPY & PASTE THIS DATABASE FIX CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
