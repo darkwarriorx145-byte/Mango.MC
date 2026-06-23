@@ -7,6 +7,8 @@ from flask import Flask, render_template, request, redirect, session, jsonify, u
 # ... rest of your code continues below ...
 app = Flask(__name__)
 
+app.secret_key = "mangomc_super_secret_key_2026"
+
 # --- COPY & PASTE THIS DATABASE FIX CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'mango_store.db')}"
