@@ -302,7 +302,7 @@
         </div>
     </div>
 
-    <div id="qrModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+<div id="qrModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
     <div class="bg-[#11131a] border border-gray-800 rounded-2xl p-6 max-w-md w-[90%] text-center">
         <h3 class="text-xl font-bold text-white mb-4">Scan To Pay</h3>
 
@@ -310,13 +310,19 @@
              alt="UPI QR"
              class="mx-auto rounded-xl mb-4 max-w-full">
 
-        <button onclick="closeQR()"
-                class="bg-red-500 text-white px-6 py-2 rounded-xl font-bold">
-            Close
-        </button>
+        <div class="flex gap-3 justify-center">
+            <button onclick="paymentDone()"
+                    class="bg-green-500 text-black px-6 py-2 rounded-xl font-bold">
+                Done
+            </button>
+
+            <button onclick="closeQR()"
+                    class="bg-red-500 text-white px-6 py-2 rounded-xl font-bold">
+                Cancel
+            </button>
+        </div>
     </div>
 </div>
-
 
     <script>
         function selectPaymentRoute(route) {
@@ -552,10 +558,7 @@ function handlePayment(event) {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-        const upiUrl = "{{ upi_link }}";
-
-        // open UPI app
-        window.location.replace(upiUrl);
+        window.open("{{ upi_link }}", "_self");
         return false;
     }
 
@@ -565,11 +568,14 @@ function handlePayment(event) {
     return false;
 }
 
+function paymentDone() {
+    document.getElementById('gateway-terminal-form').submit();
+}
+
 function closeQR() {
     document.getElementById('qrModal').classList.add('hidden');
     document.getElementById('qrModal').classList.remove('flex');
 }
-
     </script>
 </body>
 </html>
