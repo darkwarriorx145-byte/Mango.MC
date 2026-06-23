@@ -172,8 +172,11 @@
                         <div class="bg-[#141720] rounded-xl p-3 flex justify-between items-center border border-gray-800/60 text-xs">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-black flex items-center justify-center overflow-hidden border border-gray-800">
-                                    {% if i.img_url %}<img src="{{ i.img_url }}" class="w-full h-full object-cover">{% else %}💎{% endif %}
-                                </div>
+{% if i.img_url %}
+<img src="{{ i.img_url }}" class="w-full h-full object-contain p-1">
+{% else %}
+💎
+{% endif %}                                </div>
                                 <div>
                                     <span class="font-bold text-white block">{{ i.name }} <b class="text-orange-400 ml-1">(₹{{ i.price }})</b></span>
                                     <span class="text-[10px] text-gray-500 uppercase font-mono">Category: {{ i.category }}</span>
