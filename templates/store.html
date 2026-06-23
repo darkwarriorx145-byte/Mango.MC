@@ -546,17 +546,23 @@
         }
         function validateCheckoutForm() { return Object.keys(cart).length > 0 && !!document.getElementById('mc_username').value.trim(); }
         
-function handlePayment(e) {
-    e.preventDefault();
+function handlePayment(event) {
+    if (event) event.preventDefault();
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-        window.location.href = "{{ upi_link }}";
-    } else {
-        document.getElementById('qrModal').classList.remove('hidden');
-        document.getElementById('qrModal').classList.add('flex');
+        const upiUrl = "{{ upi_link }}";
+
+        // open UPI app
+        window.location.replace(upiUrl);
+        return false;
     }
+
+    document.getElementById('qrModal').classList.remove('hidden');
+    document.getElementById('qrModal').classList.add('flex');
+
+    return false;
 }
 
 function closeQR() {
