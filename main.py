@@ -17,7 +17,7 @@ db = SQLAlchemy(app)
 # ==========================================
 # CHANGE YOUR CONFIGURATION CREDENTIALS HERE
 # ==========================================
-ADMIN_USERNAME = "mango2019" <--- Change your username here
+ADMIN_USERNAME = "mango2019" #<--- Change your username here
 ADMIN_PASSWORD = "mango2019000790"  # <--- Change your password here
 
 UPI_ID = "8085903987@ybl"
