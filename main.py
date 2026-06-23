@@ -97,7 +97,7 @@ def validate_coupon():
     if coupon: return jsonify({"success": True, "type": coupon.type, "value": coupon.value})
     return jsonify({"success": False, "message": "Invalid Coupon Code"})
 
-@app.route('/payment', methods=['POST'])
+@app.route('/payment', methods=['GET', 'POST'])
 def payment_gateway():
     username = request.form.get('mc_username')
     product_ids = request.form.getlist('product_ids[]')
